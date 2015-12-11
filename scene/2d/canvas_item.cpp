@@ -309,6 +309,15 @@ void CanvasItem::hide() {
 	_change_notify("visibility/visible");
 }
 
+void CanvasItem::set_hidden(bool p_hidden) {
+	
+	if (hidden == p_hidden) {
+		return;
+	}
+	
+	_set_visible_(!p_hidden);
+}
+
 
 Variant CanvasItem::edit_get_state() const {
 
@@ -1043,6 +1052,7 @@ void CanvasItem::_bind_methods() {
 	ObjectTypeDB::bind_method(_MD("is_hidden"),&CanvasItem::is_hidden);
 	ObjectTypeDB::bind_method(_MD("show"),&CanvasItem::show);
 	ObjectTypeDB::bind_method(_MD("hide"),&CanvasItem::hide);
+	ObjectTypeDB::bind_method(_MD("set_hidden","hidden"),&CanvasItem::set_hidden);
 
 	ObjectTypeDB::bind_method(_MD("update"),&CanvasItem::update);
 
@@ -1146,6 +1156,8 @@ Matrix32 CanvasItem::get_canvas_transform() const {
 
 	if (canvas_layer)
 		return canvas_layer->get_transform();
+	else if (get_parent()->cast_to<CanvasItem>())
+		return get_parent()->cast_to<CanvasItem>()->get_canvas_transform();
 	else
 		return get_viewport()->get_canvas_transform();
 
