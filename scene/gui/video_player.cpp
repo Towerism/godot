@@ -5,7 +5,7 @@
 /*                           GODOT ENGINE                                */
 /*                    http://www.godotengine.org                         */
 /*************************************************************************/
-/* Copyright (c) 2007-2015 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2007-2016 Juan Linietsky, Ariel Manzur.                 */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -117,8 +117,9 @@ void VideoPlayer::_notification(int p_notification) {
 		case NOTIFICATION_ENTER_TREE: {
 
 			//set_idle_process(false); //don't annoy
-			if (stream.is_valid() && autoplay && !get_tree()->is_editor_hint())
+			if (stream.is_valid() && autoplay && !get_tree()->is_editor_hint()) {
 				play();
+			}
 		} break;
 
 		case NOTIFICATION_PROCESS: {
@@ -270,6 +271,7 @@ void VideoPlayer::set_paused(bool p_paused) {
 		playback->set_paused(p_paused);
 		set_process(!p_paused);
 	};
+	last_audio_time = 0;
 };
 
 bool VideoPlayer::is_paused() const {
@@ -338,6 +340,13 @@ float VideoPlayer::get_stream_pos() const {
 	return playback->get_pos();
 };
 
+Ref<Texture> VideoPlayer::get_video_texture() {
+
+	if (playback.is_valid())
+		return playback->get_texture();
+
+	return Ref<Texture> ();
+}
 
 void VideoPlayer::set_autoplay(bool p_enable) {
 
@@ -383,6 +392,8 @@ void VideoPlayer::_bind_methods() {
 
 	ObjectTypeDB::bind_method(_MD("set_buffering_msec","msec"),&VideoPlayer::set_buffering_msec);
 	ObjectTypeDB::bind_method(_MD("get_buffering_msec"),&VideoPlayer::get_buffering_msec);
+
+	ObjectTypeDB::bind_method(_MD("get_video_texutre:Texture"), &VideoPlayer::get_video_texture );
 
 	ADD_PROPERTY( PropertyInfo(Variant::INT, "stream/audio_track",PROPERTY_HINT_RANGE,"0,128,1"), _SCS("set_audio_track"), _SCS("get_audio_track") );
 	ADD_PROPERTY( PropertyInfo(Variant::OBJECT, "stream/stream", PROPERTY_HINT_RESOURCE_TYPE,"VideoStream"), _SCS("set_stream"), _SCS("get_stream") );

@@ -5,7 +5,7 @@
 /*                           GODOT ENGINE                                */
 /*                    http://www.godotengine.org                         */
 /*************************************************************************/
-/* Copyright (c) 2007-2015 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2007-2016 Juan Linietsky, Ariel Manzur.                 */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -258,6 +258,7 @@ void ProjectExportDialog::_sample_convert_edited(int what) {
 	EditorImportExport::get_singleton()->sample_set_action( EditorImportExport::SampleAction(sample_mode->get_selected()));
 	EditorImportExport::get_singleton()->sample_set_max_hz(  sample_max_hz->get_val() );
 	EditorImportExport::get_singleton()->sample_set_trim(  sample_trim->is_pressed() );
+	_save_export_cfg();
 
 }
 
@@ -471,20 +472,32 @@ void ProjectExportDialog::_export_action_pck(const String& p_file) {
 		ERR_PRINT("Invalid platform for export of PCK");
 		return;
 	}
-	FileAccess *f = FileAccess::open(p_file,FileAccess::WRITE);
-	if (!f) {
-		error->set_text("Error exporting project PCK! Can't write");
-		error->popup_centered_minsize();
-	}
-	ERR_FAIL_COND(!f);
 
-	Error err = exporter->save_pack(f,false);
-	memdelete(f);
+	if (p_file.ends_with(".pck")) {
+		FileAccess *f = FileAccess::open(p_file,FileAccess::WRITE);
+		if (!f) {
+			error->set_text("Error exporting project PCK! Can't write");
+			error->popup_centered_minsize();
+		}
+		ERR_FAIL_COND(!f);
 
-	if (err!=OK) {
-		error->set_text("Error exporting project!");
-		error->popup_centered_minsize();
-		return;
+		Error err = exporter->save_pack(f,false);
+		memdelete(f);
+
+		if (err!=OK) {
+			error->set_text("Error exporting project!");
+			error->popup_centered_minsize();
+			return;
+		}
+	} else if (p_file.ends_with(".zip")) {
+
+		Error err = exporter->save_zip(p_file,false);
+
+		if (err!=OK) {
+			error->set_text("Error exporting project!");
+			error->popup_centered_minsize();
+			return;
+		}
 	}
 }
 
@@ -1395,7 +1408,7 @@ ProjectExportDialog::ProjectExportDialog(EditorNode *p_editor) {
 	add_child(confirm);
 	confirm->connect("confirmed",this,"_confirmed");
 
-	get_ok()->set_text("Export PCK");
+	get_ok()->set_text("Export PCK/Zip");
 
 
 	expopt="--,Export,Bundle";
@@ -1425,6 +1438,7 @@ ProjectExportDialog::ProjectExportDialog(EditorNode *p_editor) {
 	pck_export->set_title("Export Project PCK");
 	pck_export->connect("file_selected", this,"_export_action_pck");
 	pck_export->add_filter("*.pck ; Data Pack");
+	pck_export->add_filter("*.zip ; Zip");
 	add_child(pck_export);
 
 	button_export = add_button("Export..",!OS::get_singleton()->get_swap_ok_cancel(),"export_pck");

@@ -5,7 +5,7 @@
 /*                           GODOT ENGINE                                */
 /*                    http://www.godotengine.org                         */
 /*************************************************************************/
-/* Copyright (c) 2007-2015 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2007-2016 Juan Linietsky, Ariel Manzur.                 */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -34,6 +34,7 @@
 #include "optimized_save_dialog.h"
 #include "undo_redo.h"
 #include "editor_data.h"
+#include "editor_name_dialog.h"
 //#include "project_export_settings.h"
 
 class ProjectSettings : public AcceptDialog {
@@ -45,14 +46,8 @@ class ProjectSettings : public AcceptDialog {
 
 	EditorData *data;
 	UndoRedo *undo_redo;
-	PropertyEditor *globals_editor;
+	SectionedPropertyEditor *globals_editor;
 
-	HBoxContainer *search_bar;
-	ToolButton *search_button;
-	LineEdit *search_box;
-	ToolButton *clear_button;
-
-	HBoxContainer *add_prop_bar;
 	ConfirmationDialog *message;
 	LineEdit *category;
 	LineEdit *property;
@@ -65,6 +60,8 @@ class ProjectSettings : public AcceptDialog {
 	OptionButton *device_index;
 	Label *device_index_label;
 	MenuButton *popup_platform;
+
+	EditorNameDialog *rename_action;
 
 	LineEdit *action_name;
 	Tree *input_editor;
@@ -92,8 +89,10 @@ class ProjectSettings : public AcceptDialog {
 	void _update_autoload();
 	void _autoload_file_callback(const String& p_path);
 	void _autoload_add();
+	void _autoload_edited();
 	void _autoload_file_open();
 	void _autoload_delete(Object *p_item,int p_column, int p_button);
+	bool updating_autoload;
 
 
 	void _item_selected();
@@ -106,6 +105,7 @@ class ProjectSettings : public AcceptDialog {
 
 	void _action_adds(String);
 	void _action_add();
+	void _action_rename(const String& p_name);
 	void _device_input_add();
 
 	void _item_checked(const String& p_item, bool p_check);
@@ -135,9 +135,6 @@ class ProjectSettings : public AcceptDialog {
 	void _translation_res_option_add(const String& p_path);
 	void _translation_res_option_changed();
 	void _translation_res_option_delete(Object *p_item,int p_column, int p_button);
-
-	void _toggle_search_bar(bool p_pressed);
-	void _clear_search_box();
 
 	ProjectSettings();
 

@@ -5,7 +5,7 @@
 /*                           GODOT ENGINE                                */
 /*                    http://www.godotengine.org                         */
 /*************************************************************************/
-/* Copyright (c) 2007-2015 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2007-2016 Juan Linietsky, Ariel Manzur.                 */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -67,8 +67,10 @@ class CanvasItemEditor : public VBoxContainer {
 	enum Tool {
 
 		TOOL_SELECT,
+		TOOL_LIST_SELECT,
 		TOOL_MOVE,
 		TOOL_ROTATE,
+		TOOL_EDIT_PIVOT,
 		TOOL_PAN,
 		TOOL_MAX
 	};
@@ -240,9 +242,11 @@ class CanvasItemEditor : public VBoxContainer {
 	List<PoseClipboard> pose_clipboard;
 
 	ToolButton *select_button;
+	ToolButton *list_select_button;
 	ToolButton *move_button;
 	ToolButton *rotate_button;
 
+	ToolButton *pivot_button;
 	ToolButton *pan_button;
 
 	ToolButton *lock_button;
@@ -263,6 +267,7 @@ class CanvasItemEditor : public VBoxContainer {
 	Button *key_insert_button;
 
 	PopupMenu *selection_menu;
+
 
 	//PopupMenu *popup;
 	DragType drag;
@@ -304,11 +309,13 @@ class CanvasItemEditor : public VBoxContainer {
 	
 	CanvasItem *ref_item;
 
+	void _edit_set_pivot(const Vector2& mouse_pos);
 	void _add_canvas_item(CanvasItem *p_canvas_item);
 	void _remove_canvas_item(CanvasItem *p_canvas_item);
 	void _clear_canvas_items();
 	void _visibility_changed(ObjectID p_canvas_item);
 	void _key_move(const Vector2& p_dir, bool p_snap, KeyMoveMODE p_move_mode);
+	void _list_select(const InputEventMouseButton& b);
 
 	DragType _find_drag_type(const Matrix32& p_xform, const Rect2& p_local_rect, const Point2& p_click, Vector2& r_point);
 
@@ -337,7 +344,7 @@ class CanvasItemEditor : public VBoxContainer {
 
 	CanvasItem *get_single_item();
 	int get_item_count();
-	void _keying_changed(bool p_changed);
+	void _keying_changed();
 
 	void _unhandled_key_input(const InputEvent& p_ev);
 

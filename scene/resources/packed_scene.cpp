@@ -5,7 +5,7 @@
 /*                           GODOT ENGINE                                */
 /*                    http://www.godotengine.org                         */
 /*************************************************************************/
-/* Copyright (c) 2007-2015 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2007-2016 Juan Linietsky, Ariel Manzur.                 */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -506,6 +506,19 @@ Error SceneState::_parse_node(Node *p_owner,Node *p_node,int p_parent_idx, Map<S
 				original = ps.state->get_property_value(ps.node,E->get().name,exists);
 				if (exists) {
 					break;
+				}
+			}
+
+			if (exists && p_node->get_script_instance()) {
+				//if this is an overriden value by another script, save it anyway
+				//as the script change will erase it
+				//https://github.com/godotengine/godot/issues/2958
+
+				bool valid=false;
+				p_node->get_script_instance()->get_property_type(name,&valid);
+				if (valid) {
+					exists=false;
+					isdefault=false;
 				}
 			}
 
@@ -1524,6 +1537,7 @@ void SceneState::add_editable_instance(const NodePath& p_path){
 SceneState::SceneState() {
 
 	base_scene_idx=-1;
+	last_modified_time=0;
 }
 
 
@@ -1583,6 +1597,25 @@ Node *PackedScene::instance(bool p_gen_edit_state) const {
 	return s;
 }
 
+void PackedScene::replace_state(Ref<SceneState> p_by) {
+
+	state=p_by;
+	state->set_path(get_path());
+#ifdef TOOLS_ENABLED
+	state->set_last_modified_time(get_last_modified_time());
+#endif
+
+}
+
+void PackedScene::recreate_state() {
+
+	state = Ref<SceneState>( memnew( SceneState ));
+	state->set_path(get_path());
+#ifdef TOOLS_ENABLED
+	state->set_last_modified_time(get_last_modified_time());
+#endif
+}
+
 Ref<SceneState> PackedScene::get_state() {
 
 	return state;
@@ -1593,6 +1626,7 @@ void PackedScene::set_path(const String& p_path,bool p_take_over) {
 	state->set_path(p_path);
 	Resource::set_path(p_path,p_take_over);
 }
+
 
 void PackedScene::_bind_methods() {
 

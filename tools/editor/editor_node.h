@@ -5,7 +5,7 @@
 /*                           GODOT ENGINE                                */
 /*                    http://www.godotengine.org                         */
 /*************************************************************************/
-/* Copyright (c) 2007-2015 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2007-2016 Juan Linietsky, Ariel Manzur.                 */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -76,7 +76,7 @@
 #include "editor_reimport_dialog.h"
 #include "import_settings.h"
 #include "tools/editor/editor_plugin.h"
-#include "tools/editor/editor_layout_dialog.h"
+#include "tools/editor/editor_name_dialog.h"
 
 #include "fileserver/editor_file_server.h"
 #include "editor_resource_preview.h"
@@ -100,13 +100,12 @@ typedef void (*EditorNodeInitCallback)();
 class EditorNode : public Node {
 
 	OBJ_TYPE( EditorNode, Node );
-	
+
 	enum {
-		
-		HISTORY_SIZE=64	
+		HISTORY_SIZE=64
 	};
+
 	enum MenuOptions {
-	
 		FILE_NEW_SCENE,
 		FILE_NEW_INHERITED_SCENE,
 		FILE_OPEN_SCENE,
@@ -119,7 +118,6 @@ class EditorNode : public Node {
 		FILE_EXPORT_MESH_LIBRARY,
 		FILE_EXPORT_TILESET,
 		FILE_SAVE_OPTIMIZED,
-		FILE_SAVE_SUBSCENE,
 		FILE_DUMP_STRINGS,
 		FILE_OPEN_RECENT,
 		FILE_OPEN_OLD_SCENE,
@@ -288,10 +286,10 @@ class EditorNode : public Node {
 	AcceptDialog *about;
 	AcceptDialog *warning;
 
-	Ref<ConfigFile> default_theme;
+	int overridden_default_layout;
+	Ref<ConfigFile> default_layout;
 	PopupMenu *editor_layouts;
-	EditorLayoutDialog *layout_dialog;
-	AcceptDialog *confirm_error;
+	EditorNameDialog *layout_dialog;
 
 	//OptimizedPresetsDialog *optimized_presets;
 	EditorSettingsDialog *settings_config_dialog;
@@ -420,8 +418,8 @@ class EditorNode : public Node {
 
 	void _node_renamed();
 	void _editor_select(int p_which);
-	void _set_scene_metadata();
-	void _get_scene_metadata();
+	void _set_scene_metadata(const String &p_file);
+	void _get_scene_metadata(const String& p_file);
 	void _update_title();
 	void _update_scene_tabs();
 	void _close_messages();
@@ -440,7 +438,7 @@ class EditorNode : public Node {
 
 	void _update_keying();
 	void _hide_top_editors();
-	void _quick_opened(const String& p_resource);
+	void _quick_opened();
 	void _quick_run(const String& p_resource);
 
 	void _run(bool p_current=false, const String &p_custom="");
@@ -540,6 +538,7 @@ class EditorNode : public Node {
 
 	void _toggle_search_bar(bool p_pressed);
 	void _clear_search_box();
+	void _clear_undo_history();
 
 protected:
 	void _notification(int p_what);
@@ -646,7 +645,7 @@ public:
 	static void add_io_error(const String& p_error);
 
 	static void progress_add_task(const String& p_task,const String& p_label, int p_steps);
-	static void progress_task_step(const String& p_task,const String& p_state, int p_step=-1);
+	static void progress_task_step(const String& p_task,const String& p_state, int p_step=-1,bool p_force_refresh=true);
 	static void progress_end_task(const String& p_task);
 
 	static void progress_add_task_bg(const String& p_task,const String& p_label, int p_steps);
@@ -673,7 +672,7 @@ public:
 struct EditorProgress {
 
 	String task;
-	void step(const String& p_state, int p_step=-1) { EditorNode::progress_task_step(task,p_state,p_step); }
+	void step(const String& p_state, int p_step=-1,bool p_force_refresh=true) { EditorNode::progress_task_step(task,p_state,p_step,p_force_refresh); }
 	EditorProgress(const String& p_task,const String& p_label,int p_amount) { EditorNode::progress_add_task(p_task,p_label,p_amount); task=p_task; }
 	~EditorProgress() { EditorNode::progress_end_task(task); }
 };

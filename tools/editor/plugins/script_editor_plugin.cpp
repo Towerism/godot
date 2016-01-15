@@ -5,7 +5,7 @@
 /*                           GODOT ENGINE                                */
 /*                    http://www.godotengine.org                         */
 /*************************************************************************/
-/* Copyright (c) 2007-2015 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2007-2016 Juan Linietsky, Ariel Manzur.                 */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -316,6 +316,8 @@ void ScriptTextEditor::_load_theme_settings() {
 	get_text_edit()->add_keyword_color("Color",basetype_color);
 	get_text_edit()->add_keyword_color("Image",basetype_color);
 	get_text_edit()->add_keyword_color("InputEvent",basetype_color);
+	get_text_edit()->add_keyword_color("Rect2",basetype_color);
+	get_text_edit()->add_keyword_color("NodePath",basetype_color);
 
 	//colorize engine types
 	Color type_color= EDITOR_DEF("text_editor/engine_type_color",Color(0.0,0.2,0.4));
@@ -325,7 +327,11 @@ void ScriptTextEditor::_load_theme_settings() {
 
 	for(List<StringName>::Element *E=types.front();E;E=E->next()) {
 
-		get_text_edit()->add_keyword_color(E->get(),type_color);
+		String n = E->get();
+		if (n.begins_with("_"))
+			n = n.substr(1, n.length());
+
+		get_text_edit()->add_keyword_color(n,type_color);
 	}
 
 	//colorize comments
@@ -604,7 +610,6 @@ void ScriptEditor::_breaked(bool p_breaked,bool p_can_debug) {
 void ScriptEditor::_show_debugger(bool p_show) {
 
 	debug_menu->get_popup()->set_item_checked( debug_menu->get_popup()->get_item_index(DEBUG_SHOW), p_show);
-
 }
 
 void ScriptEditor::_script_created(Ref<Script> p_script) {
@@ -981,7 +986,22 @@ void ScriptEditor::_menu_option(int p_option) {
 		case WINDOW_PREV: {
 			_history_back();
 		} break;
-
+		case DEBUG_SHOW: {
+			if (debugger) {
+				bool visible = debug_menu->get_popup()->is_item_checked( debug_menu->get_popup()->get_item_index(DEBUG_SHOW) );
+				debug_menu->get_popup()->set_item_checked( debug_menu->get_popup()->get_item_index(DEBUG_SHOW), !visible);
+				if (visible)
+					debugger->hide();
+				else
+					debugger->show();
+			}
+		} break;
+		case DEBUG_SHOW_KEEP_OPEN: {
+			bool visible = debug_menu->get_popup()->is_item_checked( debug_menu->get_popup()->get_item_index(DEBUG_SHOW_KEEP_OPEN) );
+			if (debugger)
+				debugger->set_hide_on_stop(visible);
+			debug_menu->get_popup()->set_item_checked( debug_menu->get_popup()->get_item_index(DEBUG_SHOW_KEEP_OPEN), !visible);
+		} break;
 	}
 
 
@@ -1334,16 +1354,6 @@ void ScriptEditor::_menu_option(int p_option) {
 				if (debugger)
 					debugger->debug_continue();
 
-			} break;
-			case DEBUG_SHOW: {
-				if (debugger) {
-					bool visible = debug_menu->get_popup()->is_item_checked( debug_menu->get_popup()->get_item_index(DEBUG_SHOW) );
-					debug_menu->get_popup()->set_item_checked( debug_menu->get_popup()->get_item_index(DEBUG_SHOW), !visible);
-					if (visible)
-						debugger->hide();
-					else
-						debugger->show();
-				}
 			} break;
 			case HELP_CONTEXTUAL: {
 				String text = current->get_text_edit()->get_selection_text();
@@ -1769,7 +1779,7 @@ void ScriptEditor::_update_script_colors() {
 		if (h>hist_size) {
 			continue;
 		}
-		float v = Math::ease((edit_pass-pass)/float_t(hist_size),0.4);
+		float v = Math::ease((edit_pass-pass)/float(hist_size),0.4);
 
 
 		script_list->set_item_custom_bg_color(i,hot_color.linear_interpolate(cold_color,v));
@@ -2037,6 +2047,15 @@ void ScriptEditor::_editor_settings_changed() {
 		autosave_timer->stop();
 	}
 
+	for(int i=0;i<tab_container->get_child_count();i++) {
+
+		ScriptTextEditor *ste = tab_container->get_child(i)->cast_to<ScriptTextEditor>();
+		if (!ste)
+			continue;
+
+		ste->get_text_edit()->set_auto_brace_completion(EditorSettings::get_singleton()->get("text_editor/auto_brace_complete"));
+	}
+
 }
 
 void ScriptEditor::_autosave_scripts() {
@@ -2252,6 +2271,10 @@ void ScriptEditor::_history_back(){
 void ScriptEditor::set_scene_root_script( Ref<Script> p_script ) {
 
 	bool open_dominant = EditorSettings::get_singleton()->get("text_editor/open_dominant_script_on_scene_change");
+
+	if (bool(EditorSettings::get_singleton()->get("external_editor/use_external_editor")))
+		return;
+
 	if (open_dominant && p_script.is_valid()) {
 		edit(p_script);
 	}
@@ -2308,7 +2331,7 @@ ScriptEditor::ScriptEditor(EditorNode *p_editor) {
 
 	script_list = memnew( ItemList );
 	script_split->add_child(script_list);
-	script_list->set_custom_minimum_size(Size2(70,0));
+	script_list->set_custom_minimum_size(Size2(0,0));
 	script_split->set_split_offset(70);
 
 	tab_container = memnew( TabContainer );
@@ -2394,6 +2417,7 @@ ScriptEditor::ScriptEditor(EditorNode *p_editor) {
 	debug_menu->get_popup()->add_item("Continue",DEBUG_CONTINUE);
 	debug_menu->get_popup()->add_separator();
 	debug_menu->get_popup()->add_check_item("Show Debugger",DEBUG_SHOW);
+	debug_menu->get_popup()->add_check_item("Keep Debugger Open",DEBUG_SHOW_KEEP_OPEN);
 	debug_menu->get_popup()->connect("item_pressed", this,"_menu_option");
 
 	debug_menu->get_popup()->set_item_disabled( debug_menu->get_popup()->get_item_index(DEBUG_NEXT), true);

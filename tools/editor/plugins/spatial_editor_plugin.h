@@ -5,7 +5,7 @@
 /*                           GODOT ENGINE                                */
 /*                    http://www.godotengine.org                         */
 /*************************************************************************/
-/* Copyright (c) 2007-2015 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2007-2016 Juan Linietsky, Ariel Manzur.                 */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -137,7 +137,6 @@ private:
 	Vector3 _get_screen_to_space(const Vector3& p_vector3);
 
 	void _select_region();
-	void _update_selection();
 	bool _gizmo_select(const Vector2& p_screenpos,bool p_hilite_only=false);
 
 	float get_znear() const;
@@ -239,6 +238,7 @@ private:
 	void _finish_gizmo_instances();
 	void _selection_result_pressed(int);
 	void _selection_menu_hide();
+	void _list_select(InputEventMouseButton b);
 
 
 protected:
@@ -287,7 +287,9 @@ public:
 		TOOL_MODE_SELECT,
 		TOOL_MODE_MOVE,
 		TOOL_MODE_ROTATE,
-		TOOL_MODE_SCALE
+		TOOL_MODE_SCALE,
+		TOOL_MODE_LIST_SELECT,
+		TOOL_MAX
 
 	};
 
@@ -369,6 +371,7 @@ private:
 		MENU_TOOL_MOVE,
 		MENU_TOOL_ROTATE,
 		MENU_TOOL_SCALE,
+		MENU_TOOL_LIST_SELECT,
 		MENU_TRANSFORM_USE_SNAP,
 		MENU_TRANSFORM_CONFIGURE_SNAP,
 		MENU_TRANSFORM_LOCAL_COORDS,
@@ -392,7 +395,7 @@ private:
 	};
 
 
-	Button *tool_button[4];
+	Button *tool_button[TOOL_MAX];
 	Button *instance_button;
 
 

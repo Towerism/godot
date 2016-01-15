@@ -5,7 +5,7 @@
 /*                           GODOT ENGINE                                */
 /*                    http://www.godotengine.org                         */
 /*************************************************************************/
-/* Copyright (c) 2007-2015 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2007-2016 Juan Linietsky, Ariel Manzur.                 */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -267,7 +267,7 @@ private:
 	Map<StringName,NodeBase*> node_map;
 
 	// return time left to finish animation
-	float _process_node(const StringName& p_node,AnimationNode **r_prev_anim, float p_weight,float p_step, bool p_seek=false,const HashMap<NodePath,bool> *p_filter=NULL, float p_reverse_weight=0);
+	float _process_node(const StringName& p_node,AnimationNode **r_prev_anim, float p_weight,float p_step, bool switched, bool p_seek=false,const HashMap<NodePath,bool> *p_filter=NULL, float p_reverse_weight=0);
 	void _process_animation(float p_delta);
 	bool reset_request;
 

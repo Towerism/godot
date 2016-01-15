@@ -5,7 +5,7 @@
 /*                           GODOT ENGINE                                */
 /*                    http://www.godotengine.org                         */
 /*************************************************************************/
-/* Copyright (c) 2007-2015 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2007-2016 Juan Linietsky, Ariel Manzur.                 */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -2283,6 +2283,8 @@ void NavigationMeshSpatialGizmo::redraw() {
 		}
 	}
 
+	if (faces.empty())
+		return;
 
 	Map<_EdgeKey,bool> edge_map;
 	DVector<Vector3> tmeshfaces;
@@ -2330,7 +2332,7 @@ void NavigationMeshSpatialGizmo::redraw() {
 		}
 	}
 
-	Ref<TriangleMesh> tmesh = memnew( TriangleMesh);
+	Ref<TriangleMesh> tmesh = memnew( TriangleMesh );
 	tmesh->create(tmeshfaces);
 
 	if (lines.size())

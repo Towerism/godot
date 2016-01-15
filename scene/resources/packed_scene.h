@@ -5,7 +5,7 @@
 /*                           GODOT ENGINE                                */
 /*                    http://www.godotengine.org                         */
 /*************************************************************************/
-/* Copyright (c) 2007-2015 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2007-2016 Juan Linietsky, Ariel Manzur.                 */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -50,7 +50,6 @@ class SceneState : public Reference {
 		FLAG_INSTANCE_IS_PLACEHOLDER=(1<<30),
 		FLAG_MASK=(1<<24)-1,
 		NO_PARENT_SAVED=0x7FFFFFFF,
-		TYPE_INSTANCED=0x7FFFFFFF,
 
 	};
 
@@ -99,10 +98,16 @@ class SceneState : public Reference {
 
 	String path;
 
+	uint64_t last_modified_time;
+
 	_FORCE_INLINE_ Ref<SceneState> _get_base_scene_state() const;
 
 	static bool disable_placeholders;
 public:
+
+	enum {
+		TYPE_INSTANCED=0x7FFFFFFF
+	};
 
 	static void set_disable_placeholders(bool p_disable);
 
@@ -162,6 +167,9 @@ public:
 	void add_connection(int p_from,int p_to, int p_signal, int p_method, int p_flags,const Vector<int>& p_binds);
 	void add_editable_instance(const NodePath& p_path);
 
+	virtual void set_last_modified_time(uint64_t p_time) { last_modified_time=p_time; }
+	uint64_t get_last_modified_time() const { return last_modified_time; }
+
 
 	SceneState();
 };
@@ -189,8 +197,14 @@ public:
 	bool can_instance() const;
 	Node *instance(bool p_gen_edit_state=false) const;
 
-	virtual void set_path(const String& p_path,bool p_take_over=false);
+	void recreate_state();
+	void replace_state(Ref<SceneState> p_by);
 
+	virtual void set_path(const String& p_path,bool p_take_over=false);
+#ifdef TOOLS_ENABLED
+	virtual void set_last_modified_time(uint64_t p_time) { state->set_last_modified_time(p_time); }
+
+#endif
 	Ref<SceneState> get_state();
 
 	PackedScene();

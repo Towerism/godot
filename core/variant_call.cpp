@@ -5,7 +5,7 @@
 /*                           GODOT ENGINE                                */
 /*                    http://www.godotengine.org                         */
 /*************************************************************************/
-/* Copyright (c) 2007-2015 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2007-2016 Juan Linietsky, Ariel Manzur.                 */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -272,6 +272,9 @@ static void _call_##m_type##_##m_method(Variant& r_ret,Variant& p_self,const Var
 	VCALL_LOCALMEM0R(String,get_file);
 	VCALL_LOCALMEM0R(String,xml_escape);
 	VCALL_LOCALMEM0R(String,xml_unescape);
+	VCALL_LOCALMEM0R(String,c_escape);
+	VCALL_LOCALMEM0R(String,c_unescape);
+	VCALL_LOCALMEM0R(String,json_escape);
 	VCALL_LOCALMEM0R(String,percent_encode);
 	VCALL_LOCALMEM0R(String,percent_decode);
 	VCALL_LOCALMEM0R(String,is_valid_identifier);
@@ -450,6 +453,9 @@ static void _call_##m_type##_##m_method(Variant& r_ret,Variant& p_self,const Var
 	VCALL_LOCALMEM0(Array,clear);
 	VCALL_LOCALMEM0R(Array,hash);
 	VCALL_LOCALMEM1(Array,push_back);
+	VCALL_LOCALMEM1(Array,push_front);
+	VCALL_LOCALMEM0(Array,pop_back);
+	VCALL_LOCALMEM0(Array,pop_front);
 	VCALL_LOCALMEM1(Array,append);
 	VCALL_LOCALMEM1(Array,resize);
 	VCALL_LOCALMEM2(Array,insert);
@@ -1283,6 +1289,9 @@ _VariantCall::addfunc(Variant::m_vtype,Variant::m_ret,_SCS(#m_method),VCALL(m_cl
 	ADDFUNC0(STRING,STRING,String,get_file,varray());
 	ADDFUNC0(STRING,STRING,String,xml_escape,varray());
 	ADDFUNC0(STRING,STRING,String,xml_unescape,varray());
+	ADDFUNC0(STRING,STRING,String,c_escape,varray());
+	ADDFUNC0(STRING,STRING,String,c_unescape,varray());
+	ADDFUNC0(STRING,STRING,String,json_escape,varray());
 	ADDFUNC0(STRING,STRING,String,percent_encode,varray());
 	ADDFUNC0(STRING,STRING,String,percent_decode,varray());
 	ADDFUNC0(STRING,BOOL,String,is_valid_identifier,varray());
@@ -1426,12 +1435,15 @@ _VariantCall::addfunc(Variant::m_vtype,Variant::m_ret,_SCS(#m_method),VCALL(m_cl
 	ADDFUNC0(ARRAY,NIL,Array,clear,varray());
 	ADDFUNC0(ARRAY,INT,Array,hash,varray());
 	ADDFUNC1(ARRAY,NIL,Array,push_back,NIL,"value",varray());
+	ADDFUNC1(ARRAY,NIL,Array,push_front,NIL,"value",varray());
 	ADDFUNC1(ARRAY,NIL,Array,append,NIL,"value",varray());
 	ADDFUNC1(ARRAY,NIL,Array,resize,INT,"pos",varray());
 	ADDFUNC2(ARRAY,NIL,Array,insert,INT,"pos",NIL,"value",varray());
 	ADDFUNC1(ARRAY,NIL,Array,remove,INT,"pos",varray());
 	ADDFUNC1(ARRAY,NIL,Array,erase,NIL,"value",varray());
 	ADDFUNC1(ARRAY,INT,Array,find,NIL,"value",varray());
+	ADDFUNC0(ARRAY,NIL,Array,pop_back,varray());
+	ADDFUNC0(ARRAY,NIL,Array,pop_front,varray());
 	ADDFUNC0(ARRAY,NIL,Array,sort,varray());
 	ADDFUNC2(ARRAY,NIL,Array,sort_custom,OBJECT,"obj",STRING,"func",varray());
 	ADDFUNC0(ARRAY,NIL,Array,invert,varray());

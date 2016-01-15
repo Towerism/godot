@@ -5,7 +5,7 @@
 /*                           GODOT ENGINE                                */
 /*                    http://www.godotengine.org                         */
 /*************************************************************************/
-/* Copyright (c) 2007-2015 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2007-2016 Juan Linietsky, Ariel Manzur.                 */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -928,7 +928,7 @@ void SceneTreeDialog::_cancel() {
 void SceneTreeDialog::_select() {
 
 	if (tree->get_selected()) {
-	        emit_signal("selected",tree->get_selected()->get_path());
+		emit_signal("selected",tree->get_selected()->get_path());
 		hide();
 	}
 }
@@ -938,7 +938,6 @@ void SceneTreeDialog::_bind_methods() {
 	ObjectTypeDB::bind_method("_select",&SceneTreeDialog::_select);
 	ObjectTypeDB::bind_method("_cancel",&SceneTreeDialog::_cancel);
 	ADD_SIGNAL( MethodInfo("selected",PropertyInfo(Variant::NODE_PATH,"path")));
-
 
 }
 
@@ -951,7 +950,7 @@ SceneTreeDialog::SceneTreeDialog() {
 	add_child(tree);
 	set_child_rect(tree);
 
-
+	tree->get_scene_tree()->connect("item_activated",this,"_select");
 
 }
 

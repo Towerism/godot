@@ -5,7 +5,7 @@
 /*                           GODOT ENGINE                                */
 /*                    http://www.godotengine.org                         */
 /*************************************************************************/
-/* Copyright (c) 2007-2015 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2007-2016 Juan Linietsky, Ariel Manzur.                 */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -736,6 +736,68 @@ void SpatialEditorViewport::_smouseenter() {
             surface->grab_focus();
 }
 
+void SpatialEditorViewport::_list_select(InputEventMouseButton b) {
+
+	_find_items_at_pos(Vector2( b.x, b.y ),clicked_includes_current,selection_results,b.mod.shift);
+
+	Node *scene=editor->get_edited_scene();
+
+	for(int i=0;i<selection_results.size();i++) {
+		Spatial *item=selection_results[i].item;
+		if (item!=scene && item->get_owner()!=scene && !scene->is_editable_instance(item->get_owner())) {
+			//invalid result
+			selection_results.remove(i);
+			i--;
+		}
+
+	}
+
+
+	clicked_wants_append=b.mod.shift;
+
+	if (selection_results.size() == 1) {
+
+		clicked=selection_results[0].item->get_instance_ID();
+		selection_results.clear();
+
+		if (clicked) {
+			_select_clicked(clicked_wants_append,true);
+			clicked=0;
+		}
+
+	} else if (!selection_results.empty()) {
+
+		NodePath root_path = get_tree()->get_edited_scene_root()->get_path();
+		StringName root_name = root_path.get_name(root_path.get_name_count()-1);
+
+		for (int i = 0; i < selection_results.size(); i++) {
+
+			Spatial *spat=selection_results[i].item;
+
+			Ref<Texture> icon;
+			if (spat->has_meta("_editor_icon"))
+				icon=spat->get_meta("_editor_icon");
+			else
+				icon=get_icon( has_icon(spat->get_type(),"EditorIcons")?spat->get_type():String("Object"),"EditorIcons");
+
+			String node_path="/"+root_name+"/"+root_path.rel_path_to(spat->get_path());
+
+			selection_menu->add_item(spat->get_name());
+			selection_menu->set_item_icon(i, icon );
+			selection_menu->set_item_metadata(i, node_path);
+			selection_menu->set_item_tooltip(i,String(spat->get_name())+
+					"\nType: "+spat->get_type()+"\nPath: "+node_path);
+		}
+
+		selection_menu->set_global_pos(Vector2( b.global_x, b.global_y ));
+		selection_menu->popup();
+		selection_menu->call_deferred("grab_click_focus");
+		selection_menu->set_invalidate_click_until_motion();
+
+
+
+	}
+}
 void SpatialEditorViewport::_sinput(const InputEvent &p_event) {
 
 	if (previewing)
@@ -868,50 +930,9 @@ void SpatialEditorViewport::_sinput(const InputEvent &p_event) {
 							if (nav_scheme == NAVIGATION_MAYA)
 								break;
 
-							_find_items_at_pos(Vector2( b.x, b.y ),clicked_includes_current,selection_results,b.mod.shift);
+							_list_select(b);
+							return;
 
-							clicked_wants_append=b.mod.shift;
-
-							if (selection_results.size() == 1) {
-
-								clicked=selection_results[0].item->get_instance_ID();
-								selection_results.clear();
-
-								if (clicked) {
-									_select_clicked(clicked_wants_append,true);
-									clicked=0;
-								}
-
-							} else if (!selection_results.empty()) {
-
-								NodePath root_path = get_tree()->get_edited_scene_root()->get_path();
-								StringName root_name = root_path.get_name(root_path.get_name_count()-1);
-
-								for (int i = 0; i < selection_results.size(); i++) {
-
-									Spatial *spat=selection_results[i].item;
-
-									Ref<Texture> icon;
-									if (spat->has_meta("_editor_icon"))
-										icon=spat->get_meta("_editor_icon");
-									else
-										icon=get_icon( has_icon(spat->get_type(),"EditorIcons")?spat->get_type():String("Object"),"EditorIcons");
-
-									String node_path="/"+root_name+"/"+root_path.rel_path_to(spat->get_path());
-
-									selection_menu->add_item(spat->get_name());
-									selection_menu->set_item_icon(i, icon );
-									selection_menu->set_item_metadata(i, node_path);
-									selection_menu->set_item_tooltip(i,String(spat->get_name())+
-											"\nType: "+spat->get_type()+"\nPath: "+node_path);
-								}
-
-								selection_menu->set_global_pos(Vector2( b.global_x, b.global_y ));
-								selection_menu->popup();
-								selection_menu->call_deferred("grab_click_focus");
-
-								break;
-							}
 						}
 					}
 
@@ -981,6 +1002,11 @@ void SpatialEditorViewport::_sinput(const InputEvent &p_event) {
 
 						NavigationScheme nav_scheme = _get_navigation_schema("3d_editor/navigation_scheme");
 						if ( (nav_scheme==NAVIGATION_MAYA || nav_scheme==NAVIGATION_MODO) && b.mod.alt) {
+							break;
+						}
+
+						if (spatial_editor->get_tool_mode()==SpatialEditor::TOOL_MODE_LIST_SELECT) {
+							_list_select(b);
 							break;
 						}
 
@@ -1591,6 +1617,8 @@ void SpatialEditorViewport::_sinput(const InputEvent &p_event) {
 		case InputEvent::KEY: {
 
 			const InputEventKey &k = p_event.key;
+			if (!k.pressed)
+				break;
 			switch(k.scancode) {
 
 				case KEY_S: {
@@ -1651,7 +1679,8 @@ void SpatialEditorViewport::_sinput(const InputEvent &p_event) {
 				} break;
 				case KEY_KP_5: {
 
-					orthogonal = !orthogonal;
+
+					//orthogonal = !orthogonal;
 					_menu_option(orthogonal?VIEW_PERSPECTIVE:VIEW_ORTHOGONAL);
 					_update_name();
 
@@ -2600,6 +2629,13 @@ Dictionary SpatialEditor::get_state() const {
 
 	Dictionary d;
 
+	d["snap_enabled"]=snap_enabled;
+	d["translate_snap"]=get_translate_snap();
+	d["rotate_snap"]=get_rotate_snap();
+	d["scale_snap"]=get_scale_snap();
+
+	int local_coords_index=transform_menu->get_popup()->get_item_index(MENU_TRANSFORM_LOCAL_COORDS);
+	d["local_coords"]=transform_menu->get_popup()->is_item_checked( local_coords_index );
 
 	int vc=0;
 	if (view_menu->get_popup()->is_item_checked( view_menu->get_popup()->get_item_index(MENU_VIEW_USE_1_VIEWPORT) ))
@@ -2641,37 +2677,52 @@ void SpatialEditor::set_state(const Dictionary& p_state) {
 
 	Dictionary d = p_state;
 
-	ERR_FAIL_COND(!d.has("viewport_mode"));
-	ERR_FAIL_COND(!d.has("viewports"));
-	ERR_FAIL_COND(!d.has("default_light"));
-	ERR_FAIL_COND(!d.has("show_grid"));
-	ERR_FAIL_COND(!d.has("show_origin"));
-	ERR_FAIL_COND(!d.has("fov"));
-	ERR_FAIL_COND(!d.has("znear"));
-	ERR_FAIL_COND(!d.has("zfar"));
-
-	int vc = d["viewport_mode"];
-
-	if (vc==1)
-		_menu_item_pressed(MENU_VIEW_USE_1_VIEWPORT);
-	else if (vc==2)
-		_menu_item_pressed(MENU_VIEW_USE_2_VIEWPORTS);
-	else if (vc==3)
-		_menu_item_pressed(MENU_VIEW_USE_3_VIEWPORTS);
-	else if (vc==4)
-		_menu_item_pressed(MENU_VIEW_USE_4_VIEWPORTS);
-	else if (vc==5)
-		_menu_item_pressed(MENU_VIEW_USE_2_VIEWPORTS_ALT);
-	else if (vc==6)
-		_menu_item_pressed(MENU_VIEW_USE_3_VIEWPORTS_ALT);
-
-	Array vp = d["viewports"];
-	ERR_FAIL_COND(vp.size()>4);
-
-	for(int i=0;i<4;i++) {
-		viewports[i]->set_state(vp[i]);
+	if (d.has("snap_enabled")) {
+		snap_enabled=d["snap_enabled"];
+		int snap_enabled_idx=transform_menu->get_popup()->get_item_index(MENU_TRANSFORM_USE_SNAP);
+		transform_menu->get_popup()->set_item_checked( snap_enabled_idx, snap_enabled );
 	}
 
+	if (d.has("translate_snap"))
+		snap_translate->set_text(d["translate_snap"]);
+
+	if (d.has("rotate_snap"))
+		snap_rotate->set_text(d["rotate_snap"]);
+
+	if (d.has("scale_snap"))
+		snap_scale->set_text(d["scale_snap"]);
+
+	if (d.has("local_coords")) {
+		int local_coords_idx=transform_menu->get_popup()->get_item_index(MENU_TRANSFORM_LOCAL_COORDS);
+		transform_menu->get_popup()->set_item_checked( local_coords_idx, d["local_coords"] );
+		update_transform_gizmo();
+	}
+
+	if (d.has("viewport_mode")) {
+		int vc = d["viewport_mode"];
+
+		if (vc==1)
+			_menu_item_pressed(MENU_VIEW_USE_1_VIEWPORT);
+		else if (vc==2)
+			_menu_item_pressed(MENU_VIEW_USE_2_VIEWPORTS);
+		else if (vc==3)
+			_menu_item_pressed(MENU_VIEW_USE_3_VIEWPORTS);
+		else if (vc==4)
+			_menu_item_pressed(MENU_VIEW_USE_4_VIEWPORTS);
+		else if (vc==5)
+			_menu_item_pressed(MENU_VIEW_USE_2_VIEWPORTS_ALT);
+		else if (vc==6)
+			_menu_item_pressed(MENU_VIEW_USE_3_VIEWPORTS_ALT);
+	}
+
+	if (d.has("viewports")) {
+		Array vp = d["viewports"];
+		ERR_FAIL_COND(vp.size()>4);
+
+		for(int i=0;i<4;i++) {
+			viewports[i]->set_state(vp[i]);
+		}
+	}
 
 	if (d.has("zfar"))
 		settings_zfar->set_val(float(d["zfar"]));
@@ -2841,13 +2892,14 @@ void SpatialEditor::_menu_item_pressed(int p_option) {
 		case MENU_TOOL_SELECT:
 		case MENU_TOOL_MOVE:
 		case MENU_TOOL_ROTATE:
-		case MENU_TOOL_SCALE: {
+		case MENU_TOOL_SCALE:
+		case MENU_TOOL_LIST_SELECT: {
 
-			for(int i=0;i<4;i++)
+			for(int i=0;i<TOOL_MAX;i++)
 				tool_button[i]->set_pressed(i==p_option);
 			tool_mode=(ToolMode)p_option;
 
-			static const char *_mode[]={"Selection Mode.","Translation Mode.","Rotation Mode.","Scale Mode."};
+			static const char *_mode[]={"Selection Mode.","Translation Mode.","Rotation Mode.","Scale Mode.","List Selection Mode."};
 //			set_message(_mode[p_option],3);
 			update_transform_gizmo();
 
@@ -3474,19 +3526,13 @@ void SpatialEditor::_instance_scene() {
 	undo_redo->commit_action();
 #endif
 }
-/*
-void SpatialEditor::_update_selection() {
 
-
-
-}
-*/
 void SpatialEditor::_unhandled_key_input(InputEvent p_event) {
 
-	if (!is_visible())
+	if (!is_visible() || window_has_modal_stack())
 		return;
 
-	 {
+	{
 
 		EditorNode *en = editor;
 		EditorPlugin *over_plugin = en->get_editor_plugin_over();
@@ -3530,6 +3576,7 @@ void SpatialEditor::_notification(int p_what) {
 		tool_button[SpatialEditor::TOOL_MODE_MOVE]->set_icon( get_icon("ToolMove","EditorIcons") );
 		tool_button[SpatialEditor::TOOL_MODE_ROTATE]->set_icon( get_icon("ToolRotate","EditorIcons") );
 		tool_button[SpatialEditor::TOOL_MODE_SCALE]->set_icon( get_icon("ToolScale","EditorIcons") );
+		tool_button[SpatialEditor::TOOL_MODE_LIST_SELECT]->set_icon( get_icon("ListSelect","EditorIcons") );
 		instance_button->set_icon( get_icon("SpatialAdd","EditorIcons") );
 		instance_button->hide();
 
@@ -3684,7 +3731,6 @@ void SpatialEditor::_bind_methods() {
 	ObjectTypeDB::bind_method("_menu_item_pressed",&SpatialEditor::_menu_item_pressed);
 	ObjectTypeDB::bind_method("_xform_dialog_action",&SpatialEditor::_xform_dialog_action);
 	ObjectTypeDB::bind_method("_instance_scene",&SpatialEditor::_instance_scene);
-//	ObjectTypeDB::bind_method("_update_selection",&SpatialEditor::_update_selection);
 	ObjectTypeDB::bind_method("_get_editor_data",&SpatialEditor::_get_editor_data);
 	ObjectTypeDB::bind_method("_request_gizmo",&SpatialEditor::_request_gizmo);
 	ObjectTypeDB::bind_method("_default_light_angle_input",&SpatialEditor::_default_light_angle_input);
@@ -3786,7 +3832,6 @@ SpatialEditor::SpatialEditor(EditorNode *p_editor) {
 	editor=p_editor;
 	editor_selection=editor->get_editor_selection();
 	editor_selection->add_editor_plugin(this);
-	editor_selection->connect("selection_changed",this,"_update_selection");
 
 	snap_enabled=false;
 	tool_mode = TOOL_MODE_SELECT;
@@ -3807,7 +3852,7 @@ SpatialEditor::SpatialEditor(EditorNode *p_editor) {
 	tool_button[TOOL_MODE_SELECT]->set_pressed(true);
 	button_binds[0]=MENU_TOOL_SELECT;
 	tool_button[TOOL_MODE_SELECT]->connect("pressed", this,"_menu_item_pressed",button_binds);
-	tool_button[TOOL_MODE_SELECT]->set_tooltip("Select Mode (Q)");
+	tool_button[TOOL_MODE_SELECT]->set_tooltip("Select Mode (Q)\n"+keycode_get_string(KEY_MASK_CMD)+"Drag: Rotate\nAlt+Drag: Move\nAlt+RMB: Depth list selection");
 
 
 	tool_button[TOOL_MODE_MOVE] = memnew( ToolButton );
@@ -3839,8 +3884,20 @@ SpatialEditor::SpatialEditor(EditorNode *p_editor) {
 	hbc_menu->add_child( instance_button );
 	instance_button->set_flat(true);
 	instance_button->connect("pressed",this,"_instance_scene");
+	instance_button->hide();
 
 	VSeparator *vs = memnew( VSeparator );
+	hbc_menu->add_child(vs);
+
+	tool_button[TOOL_MODE_LIST_SELECT] = memnew( ToolButton );
+	hbc_menu->add_child( tool_button[TOOL_MODE_LIST_SELECT] );
+	tool_button[TOOL_MODE_LIST_SELECT]->set_toggle_mode(true);
+	tool_button[TOOL_MODE_LIST_SELECT]->set_flat(true);
+	button_binds[0]=MENU_TOOL_LIST_SELECT;
+	tool_button[TOOL_MODE_LIST_SELECT]->connect("pressed", this,"_menu_item_pressed",button_binds);
+	tool_button[TOOL_MODE_LIST_SELECT]->set_tooltip("Show a list of all objects at the position clicked\n(same as Alt+RMB in selet mode).");
+
+	vs = memnew( VSeparator );
 	hbc_menu->add_child(vs);
 
 
