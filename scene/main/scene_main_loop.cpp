@@ -211,7 +211,7 @@ void SceneTree::call_group(uint32_t p_call_flags,const StringName& p_group,const
 				else
 					nodes[i]->call(p_function,VARIANT_ARG_PASS);
 			} else
-				MessageQueue::get_singleton()->push_call(nodes[i],p_function,VARIANT_ARG_PASS);			
+				MessageQueue::get_singleton()->push_call(nodes[i],p_function,VARIANT_ARG_PASS);
 		}
 
 	}
@@ -330,7 +330,8 @@ void SceneTree::input_text( const String& p_text ) {
 
 	root_lock++;
 
-	call_group(GROUP_CALL_REALTIME|GROUP_CALL_MULIILEVEL,"input",p_text);
+	call_group(GROUP_CALL_REALTIME,"_viewports","_vp_input_text",p_text); //special one for GUI, as controls use their own process check
+
 	root_lock--;
 
 }
@@ -432,7 +433,7 @@ void SceneTree::input_event( const InputEvent& p_event ) {
 		ScriptDebugger::get_singleton()->request_quit();
 	}
 
-	_flush_ugc();	
+	_flush_ugc();
 	root_lock--;
 	MessageQueue::get_singleton()->flush(); //small little hack
 
