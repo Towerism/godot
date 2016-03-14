@@ -1,5 +1,5 @@
 THREADS ?= 8
-PREFIX ?= /usr/local/stow/godotengine
+PREFIX ?= /usr/local/stow
 
 .PHONY: all build install
 .DEFAULT: build
@@ -12,4 +12,4 @@ build:
 install:
 	chmod a+x ./bin/godot.x11.tools.64
 	mkdir -p $(PREFIX)
-	cp ./bin/godot.x11.tools.64 $(PREFIX)/godot
+	cp ./bin/godot.x11.tools.64 $(PREFIX)/godotengine/godot
